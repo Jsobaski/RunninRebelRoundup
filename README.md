@@ -10,6 +10,7 @@ Unofficial fan project — not affiliated with UNLV Athletics.
 - **Schedule** — month calendar and list views; click a game for a detail page with a season-average matchup comparison and final score once played.
 - **Stats & Rankings** — team averages, player leaders, AP/NET rank, and a rank-trend chart.
 - **Roster & Recruiting** — current roster with per-player stats, and a recruiting board (committed/target prospects).
+- **Manual refresh** — a Refresh button in the nav bar re-fetches all data sources on demand (20s cooldown so repeat clicks don't hammer upstream sources), independent of the cron job below.
 
 ## Data sources
 
@@ -57,6 +58,7 @@ See `.env.example` for the full list with explanations. Key ones:
 2. Set the environment variables above in Project Settings → Environment Variables.
 3. Deploy. Data-backed pages use ISR (`export const revalidate = ...` per route) so they're served from cache and refreshed in the background — no live fetch on every request.
 4. `vercel.json` defines a cron job hitting `/api/cron/refresh` once daily (noon UTC) to proactively warm the ISR cache. **Vercel's Hobby plan rejects the deploy outright if a cron schedule would fire more than once a day**, so this stays daily by default — ISR's own on-demand revalidation (each page's `revalidate` window) covers refreshes in between. If you're on Pro and want tighter cache warming (e.g. every 6 hours during the season), change the schedule in `vercel.json` to `0 */6 * * *`.
+5. The in-app Refresh button (`components/RefreshButton.tsx`) hits `/api/refresh`, a plain POST route — not a `vercel.json` cron entry — so it's unaffected by the Hobby cron limit above and works on any plan. Both refresh routes share the same revalidation logic in `lib/revalidate.ts`.
 
 ## Open decisions
 

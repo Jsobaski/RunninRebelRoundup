@@ -1,10 +1,11 @@
-import { revalidatePath } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateAllData } from "@/lib/revalidate";
 
 /**
  * Triggered by Vercel Cron (see vercel.json) to proactively refresh the ISR
  * cache for data-backed pages, instead of waiting for the first visitor
- * request after a page's `revalidate` window expires.
+ * request after a page's `revalidate` window expires. See also
+ * /api/refresh, the user-facing equivalent behind the in-app refresh button.
  */
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
@@ -12,10 +13,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const paths = ["/", "/schedule", "/stats", "/roster"];
-  for (const path of paths) {
-    revalidatePath(path);
-  }
-
-  return NextResponse.json({ revalidated: paths, timestamp: new Date().toISOString() });
+  const revalidated = revalidateAllData();
+  return NextResponse.json({ revalidated, timestamp: new Date().toISOString() });
 }
