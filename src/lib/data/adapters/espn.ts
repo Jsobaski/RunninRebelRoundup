@@ -17,6 +17,7 @@ import type {
   GameStatus,
   PlayerSeasonStats,
   RankingEntry,
+  RosterPlayer,
   TeamRef,
   TeamSeasonStats,
 } from "@/lib/data/types";
@@ -260,6 +261,78 @@ export async function fetchPlayerSeasonStats(
       };
     });
 
+    return ok(players);
+  } catch (error) {
+    return fail(error);
+  }
+}
+
+interface EspnRosterAthlete {
+  id?: string;
+  displayName?: string;
+  jersey?: string;
+  position?: { abbreviation?: string };
+  height?: number; // total inches, when present
+  displayHeight?: string; // e.g. "6' 2\""
+  experience?: { displayValue?: string; years?: number };
+  headshot?: { href?: string };
+  birthPlace?: { city?: string; state?: string };
+}
+
+interface EspnRosterGroup {
+  items?: EspnRosterAthlete[];
+}
+
+interface EspnRosterResponse {
+  athletes?: (EspnRosterAthlete | EspnRosterGroup)[];
+}
+
+function isRosterGroup(entry: EspnRosterAthlete | EspnRosterGroup): entry is EspnRosterGroup {
+  return Array.isArray((entry as EspnRosterGroup).items);
+}
+
+function parseDisplayHeight(text: string | undefined): number {
+  if (!text) return 0;
+  const match = text.match(/(\d+)'\s*(\d+)?/);
+  if (!match) return 0;
+  return Number(match[1]) * 12 + Number(match[2] ?? 0);
+}
+
+function classYearFromExperience(displayValue: string | undefined): RosterPlayer["classYear"] {
+  const text = (displayValue ?? "").toLowerCase();
+  if (text.includes("redshirt")) return "Redshirt";
+  if (text.includes("senior")) return "Senior";
+  if (text.includes("junior")) return "Junior";
+  if (text.includes("sophomore")) return "Sophomore";
+  if (text.includes("grad")) return "Grad";
+  return "Freshman";
+}
+
+/**
+ * ESPN's team roster endpoint — used in preference to scraping UNLV's own
+ * roster page, since it's keyed off the same numeric team id already
+ * confirmed correct (see UNLV_ESPN_TEAM_ID) rather than guessed CSS class
+ * names that can't be verified without a live network fetch.
+ */
+export async function fetchRosterFromEspn(teamId: string): Promise<FetchResult<RosterPlayer[]>> {
+  try {
+    const json = (await getJson(`${SITE_API_BASE}/teams/${teamId}/roster`)) as EspnRosterResponse;
+    const athletes = (json.athletes ?? []).flatMap((entry) => (isRosterGroup(entry) ? entry.items ?? [] : [entry]));
+
+    const players: RosterPlayer[] = athletes
+      .filter((a): a is EspnRosterAthlete & { displayName: string } => Boolean(a.displayName))
+      .map((a) => ({
+        id: a.id ?? a.displayName.toLowerCase().replace(/\s+/g, "-"),
+        name: a.displayName,
+        jersey: a.jersey ?? "--",
+        position: a.position?.abbreviation ?? "--",
+        classYear: classYearFromExperience(a.experience?.displayValue),
+        heightInches: a.height ?? parseDisplayHeight(a.displayHeight),
+        hometown: [a.birthPlace?.city, a.birthPlace?.state].filter(Boolean).join(", ") || undefined,
+        photoUrl: a.headshot?.href,
+      }));
+
+    if (players.length === 0) throw new Error("ESPN roster response had no athletes");
     return ok(players);
   } catch (error) {
     return fail(error);

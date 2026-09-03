@@ -1,4 +1,6 @@
 import { RankTrendChart } from "@/components/RankTrendChart";
+import { SeedNotice } from "@/components/SeedNotice";
+import { Unavailable } from "@/components/Unavailable";
 import { UNLV_ESPN_TEAM_ID } from "@/lib/data/services/schedule-service";
 import { getPlayerSeasonStats, getRankTrend, getRankings, getTeamSeasonStats } from "@/lib/data/services/stats-service";
 import type { PlayerSeasonStats } from "@/lib/data/types";
@@ -6,7 +8,12 @@ import type { PlayerSeasonStats } from "@/lib/data/types";
 export const revalidate = 1800;
 
 export default async function StatsPage() {
-  const [{ stats: teamStats }, { players }, { rankings }, { trend }] = await Promise.all([
+  const [
+    { stats: teamStats, source: teamSource },
+    { players, source: playerSource },
+    { rankings },
+    { trend },
+  ] = await Promise.all([
     getTeamSeasonStats(UNLV_ESPN_TEAM_ID),
     getPlayerSeasonStats(),
     getRankings(),
@@ -24,44 +31,58 @@ export default async function StatsPage() {
         <p className="text-sm text-foreground/60">Season {teamStats.season}</p>
       </div>
 
+      {teamSource === "seed" && <SeedNotice label="stats" />}
+
       <section className="flex flex-col gap-2">
         <h2 className="text-lg font-semibold">National Context</h2>
-        <div className="flex flex-wrap gap-3">
-          {rankings.map((r) => (
-            <div key={r.poll} className="rounded-lg border border-border bg-surface px-4 py-3 text-center">
-              <div className="text-xs font-medium uppercase tracking-wide text-foreground/50">{r.poll}</div>
-              <div className="text-2xl font-bold text-unlv-red">#{r.rank}</div>
-              {r.record && <div className="text-xs text-foreground/50">{r.record}</div>}
-            </div>
-          ))}
-        </div>
+        {rankings.length === 0 ? (
+          <Unavailable label="Rankings" />
+        ) : (
+          <div className="flex flex-wrap gap-3">
+            {rankings.map((r) => (
+              <div key={r.poll} className="rounded-lg border border-border bg-surface px-4 py-3 text-center">
+                <div className="text-xs font-medium uppercase tracking-wide text-foreground/50">{r.poll}</div>
+                <div className="text-2xl font-bold text-unlv-red">#{r.rank}</div>
+                {r.record && <div className="text-xs text-foreground/50">{r.record}</div>}
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="flex flex-col gap-2">
         <h2 className="text-lg font-semibold">Rank Trend</h2>
-        <RankTrendChart trend={trend} />
+        {trend.length === 0 ? <Unavailable label="Rank trend" /> : <RankTrendChart trend={trend} />}
       </section>
 
       <section className="flex flex-col gap-2">
         <h2 className="text-lg font-semibold">Team Averages</h2>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <StatTile label="PPG" value={teamStats.pointsPerGame.toFixed(1)} />
-          <StatTile label="RPG" value={teamStats.reboundsPerGame.toFixed(1)} />
-          <StatTile label="APG" value={teamStats.assistsPerGame.toFixed(1)} />
-          <StatTile label="FG%" value={`${(teamStats.fieldGoalPct * 100).toFixed(1)}%`} />
-          <StatTile label="3P%" value={`${(teamStats.threePointPct * 100).toFixed(1)}%`} />
-          <StatTile label="TO/G" value={teamStats.turnoversPerGame.toFixed(1)} />
-          <StatTile label="Pace" value={teamStats.pace.toFixed(1)} />
-        </div>
+        {teamSource === "seed" ? (
+          <Unavailable label="Team stats" />
+        ) : (
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <StatTile label="PPG" value={teamStats.pointsPerGame.toFixed(1)} />
+            <StatTile label="RPG" value={teamStats.reboundsPerGame.toFixed(1)} />
+            <StatTile label="APG" value={teamStats.assistsPerGame.toFixed(1)} />
+            <StatTile label="FG%" value={`${(teamStats.fieldGoalPct * 100).toFixed(1)}%`} />
+            <StatTile label="3P%" value={`${(teamStats.threePointPct * 100).toFixed(1)}%`} />
+            <StatTile label="TO/G" value={teamStats.turnoversPerGame.toFixed(1)} />
+            <StatTile label="Pace" value={teamStats.pace.toFixed(1)} />
+          </div>
+        )}
       </section>
 
       <section className="flex flex-col gap-4">
         <h2 className="text-lg font-semibold">Player Leaders</h2>
-        <div className="grid gap-4 sm:grid-cols-3">
-          <LeaderList title="Points" players={topScorers} statKey="pointsPerGame" />
-          <LeaderList title="Rebounds" players={topRebounders} statKey="reboundsPerGame" />
-          <LeaderList title="Assists" players={topAssisters} statKey="assistsPerGame" />
-        </div>
+        {playerSource === "seed" || players.length === 0 ? (
+          <Unavailable label="Player stats" />
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-3">
+            <LeaderList title="Points" players={topScorers} statKey="pointsPerGame" />
+            <LeaderList title="Rebounds" players={topRebounders} statKey="reboundsPerGame" />
+            <LeaderList title="Assists" players={topAssisters} statKey="assistsPerGame" />
+          </div>
+        )}
       </section>
     </div>
   );

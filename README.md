@@ -18,20 +18,24 @@ Every external source is isolated behind its own adapter module in `src/lib/data
 
 | Data | Adapter | Notes |
 |---|---|---|
-| Scores, schedule, team/player stats, rankings | `adapters/espn.ts` | ESPN's public but **unofficial, undocumented** endpoints (`site.api.espn.com`, `sports.core.api.espn.com`). No auth, no SLA — the shape can change with zero notice. Not for commercial use. |
+| Scores, schedule, team/player stats, rankings, roster | `adapters/espn.ts` | ESPN's public but **unofficial, undocumented** endpoints (`site.api.espn.com`, `sports.core.api.espn.com`). No auth, no SLA — the shape can change with zero notice. Not for commercial use. Team id `2439` is confirmed correct. |
 | News | `adapters/rss.ts` | RSS from UNLV Athletics, Las Vegas Review-Journal, Vegas Sun, and ESPN's general CBB feed (filtered to UNLV mentions). |
 | Social | `components/XTimeline.tsx` | X's native embedded timeline widget, scoped to a curated List — client-side, free, no API key. |
-| Roster | `adapters/roster-scraper.ts` | Scrapes UNLV's official athletics roster page. |
+| Roster (fallback) | `adapters/roster-scraper.ts` | Scrapes UNLV's official athletics roster page — only used if the ESPN roster endpoint above fails. |
 | Recruiting | `adapters/recruiting-scraper.ts` | Scrapes a public 247Sports team commits page. Treat as "last updated," not real-time. |
+
+Every route also has a **placeholder fallback** in `src/lib/data/seed/` for when every live source fails, and shows an amber "showing placeholder data" banner (`components/SeedNotice.tsx`) when it's active — the page never silently presents fallback numbers as if they were real. If you see that banner in production, live data is failing; check the adapter, not the UI.
 
 ### A note on the ESPN and scraper adapters
 
-This project was built in a sandboxed environment with no outbound network access to espn.com, unlvrebels.com, 247sports.com, or the RSS feed hosts, so **none of the ESPN endpoint calls or CSS selectors below have been exercised against live responses.** They're implemented against the well-documented public shape of ESPN's site API and typical Sidearm Sports / 247Sports markup, with defensive parsing (optional chaining, try/catch, empty-result fallback) so a wrong guess degrades to seed data instead of crashing — but budget time to verify and adjust:
+This project was built in a sandboxed environment with no outbound network access to espn.com, unlvrebels.com, 247sports.com, or the RSS feed hosts, so the endpoint calls and CSS selectors below have not been exercised against live responses from this environment — they're implemented against the well-documented public shape of ESPN's site API and typical Sidearm Sports / 247Sports markup, with defensive parsing (optional chaining, try/catch, empty-result fallback) so a wrong guess degrades to a clearly-labeled placeholder instead of crashing or silently showing wrong data. Still worth verifying:
 
-- Confirm `ESPN_UNLV_TEAM_ID` (defaults to `2439`) against `https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/teams/2439`.
-- Confirm the RSS feed URLs in `adapters/rss.ts` still resolve (news sites restructure feeds without warning).
-- Verify the `.sidearm-roster-player` selectors in `adapters/roster-scraper.ts` against the live roster page — Sidearm Sports (what most college athletics sites, including UNLV's, run on) changes markup periodically.
-- Verify the `.ri-page__list-item` selectors in `adapters/recruiting-scraper.ts` against the live 247Sports commits page.
+- `ESPN_UNLV_TEAM_ID` (`2439`) — confirmed via web search against `https://www.espn.com/mens-college-basketball/team/roster/_/id/2439/unlv-rebels`.
+- The RSS feed URLs in `adapters/rss.ts` still resolve (news sites restructure feeds without warning).
+- The `.sidearm-roster-player` selectors in `adapters/roster-scraper.ts`, if the ESPN roster endpoint (`teams/{id}/roster`) ever stops working and this fallback scraper starts being used.
+- The `.ri-page__list-item` selectors in `adapters/recruiting-scraper.ts` against the live 247Sports commits page.
+
+**A hardcoded season previously caused this app to show last season's schedule, stats, and roster as if current.** `NEXT_PUBLIC_SEASON` no longer has a hardcoded default — `src/lib/data/season.ts` computes the current season from today's date instead, so it can't go stale again. Don't set `NEXT_PUBLIC_SEASON` in your environment unless you deliberately want to pin a specific season; if you previously imported `.env.example` verbatim into Vercel, **check Project Settings → Environment Variables and remove any `NEXT_PUBLIC_SEASON` entry**, or it'll override this fix.
 
 ## Getting started
 

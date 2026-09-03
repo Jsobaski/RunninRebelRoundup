@@ -1,70 +1,49 @@
 import type { RecruitingProspect, RosterPlayer } from "@/lib/data/types";
 
+/**
+ * Fallback roster/recruiting data used only when live sources (ESPN roster
+ * JSON, then the UNLV site scrape) are unavailable. Deliberately generic
+ * ("Placeholder Player") rather than real names — an earlier version of
+ * this file used real former UNLV players' names as filler, which meant a
+ * live-data outage silently displayed real people who hadn't played for
+ * the team in years as if they were on the current roster.
+ */
 export const seedRoster: RosterPlayer[] = [
   {
-    id: "p1",
-    name: "Jailen Bedford",
-    jersey: "3",
+    id: "seed-p1",
+    name: "Placeholder Player A",
+    jersey: "0",
     position: "G",
     classYear: "Senior",
     heightInches: 74,
-    hometown: "Little Rock, AR",
-    stats: { pointsPerGame: 18.5, reboundsPerGame: 4.0, assistsPerGame: 5.5 },
   },
   {
-    id: "p2",
-    name: "Chuck Bailey II",
-    jersey: "10",
+    id: "seed-p2",
+    name: "Placeholder Player B",
+    jersey: "1",
     position: "F",
     classYear: "Junior",
     heightInches: 79,
-    hometown: "Detroit, MI",
-    stats: { pointsPerGame: 15.0, reboundsPerGame: 8.5, assistsPerGame: 2.0 },
   },
   {
-    id: "p3",
-    name: "Rob Whaley Jr.",
-    jersey: "12",
+    id: "seed-p3",
+    name: "Placeholder Player C",
+    jersey: "2",
     position: "C",
     classYear: "Grad",
     heightInches: 82,
-    hometown: "Trenton, NJ",
-    stats: { pointsPerGame: 13.0, reboundsPerGame: 7.5, assistsPerGame: 1.0 },
-  },
-  {
-    id: "p4",
-    name: "Dedan Thomas Jr.",
-    jersey: "1",
-    position: "G",
-    classYear: "Sophomore",
-    heightInches: 74,
-    hometown: "Las Vegas, NV",
   },
 ];
 
 export const seedRecruiting: RecruitingProspect[] = [
   {
-    id: "r1",
-    name: "Marcus Ellery",
+    id: "seed-r1",
+    name: "Placeholder Prospect A",
     position: "SG",
-    status: "Committed",
-    classYear: "2026",
-    stars: 3,
-    hometown: "Henderson, NV",
+    status: "Target",
+    classYear: "----",
     sourceUrl: "https://247sports.com/",
     sourceName: "247Sports",
-    lastUpdated: "2025-08-15",
-  },
-  {
-    id: "r2",
-    name: "Trey Okafor",
-    position: "PF",
-    status: "Target",
-    classYear: "2026",
-    stars: 4,
-    hometown: "Phoenix, AZ",
-    sourceUrl: "https://www.on3.com/",
-    sourceName: "On3",
-    lastUpdated: "2025-08-15",
+    lastUpdated: new Date().toISOString(),
   },
 ];

@@ -1,4 +1,5 @@
 import { getRecruiting, getRoster } from "@/lib/data/services/roster-service";
+import { SeedNotice } from "@/components/SeedNotice";
 import { Unavailable } from "@/components/Unavailable";
 
 export const revalidate = 43200;
@@ -25,13 +26,11 @@ export default async function RosterPage() {
     <div className="flex flex-col gap-8">
       <div>
         <h1 className="text-2xl font-bold">Roster & Recruiting</h1>
-        <p className="text-sm text-foreground/60">
-          {rosterSource === "seed" ? "Showing seed roster data — live scrape unavailable." : "Current roster"}
-        </p>
       </div>
 
       <section className="flex flex-col gap-3">
         <h2 className="text-lg font-semibold">Roster</h2>
+        {rosterSource === "seed" && <SeedNotice label="roster" />}
         {players.length === 0 ? (
           <Unavailable label="Roster" />
         ) : (
@@ -68,10 +67,8 @@ export default async function RosterPage() {
 
       <section className="flex flex-col gap-3">
         <h2 className="text-lg font-semibold">Recruiting</h2>
-        <p className="text-xs text-foreground/50">
-          Scraped data — treat as &quot;last updated,&quot; not real-time.
-          {recruitingSource === "seed" && " Live scrape unavailable, showing seed data."}
-        </p>
+        <p className="text-xs text-foreground/50">Scraped data — treat as &quot;last updated,&quot; not real-time.</p>
+        {recruitingSource === "seed" && <SeedNotice label="recruiting" />}
         {prospects.length === 0 ? (
           <Unavailable label="Recruiting" />
         ) : (
