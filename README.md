@@ -56,7 +56,7 @@ See `.env.example` for the full list with explanations. Key ones:
 1. Push this repo to GitHub and import it in Vercel.
 2. Set the environment variables above in Project Settings → Environment Variables.
 3. Deploy. Data-backed pages use ISR (`export const revalidate = ...` per route) so they're served from cache and refreshed in the background — no live fetch on every request.
-4. `vercel.json` defines a cron job hitting `/api/cron/refresh` every 6 hours to proactively warm the ISR cache. **On Vercel's Hobby plan, cron jobs are limited to once per day** regardless of the schedule expression — fine for this app's data (nothing here needs faster than daily background refresh; ISR's own on-demand revalidation covers the gap between cron runs). Upgrade to Pro if you want the full 6-hour cadence.
+4. `vercel.json` defines a cron job hitting `/api/cron/refresh` once daily (noon UTC) to proactively warm the ISR cache. **Vercel's Hobby plan rejects the deploy outright if a cron schedule would fire more than once a day**, so this stays daily by default — ISR's own on-demand revalidation (each page's `revalidate` window) covers refreshes in between. If you're on Pro and want tighter cache warming (e.g. every 6 hours during the season), change the schedule in `vercel.json` to `0 */6 * * *`.
 
 ## Open decisions
 
